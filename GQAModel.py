@@ -1,24 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
-
 import train
 from model import precompute_freqs_cis, apply_rotary_emb, RMSNorm, FeedForward
 import torch
 from torch import nn
 import torch.nn.functional as F
-
-n_embedding: int = 360  # 嵌入维度
-# 注意力相关参数
-n_heads: int = 4  # 注意力头
-head_dim: int = n_embedding // n_heads  # 每个注意力头的维度
-vocab_size: int = -1  # 词表大小
-multiple_of: int = 4  # make SwiGLU hidden layer size multiple of large power of 2
-batch_size: int = 128  # 一个批量大小
-block_size: int = 512  # 一个批量中包含的字符数
-dropout: float = 0.2
-device: str = 'cuda:5' if torch.cuda.is_available() else 'cpu'
-# device="cpu"
-max_iter: int = 10
 
 
 class GQAHead(nn.Module):
@@ -31,7 +17,7 @@ class GQAHead(nn.Module):
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
         self.dropout = nn.Dropout(dropout)
         self.pos_embed_method = pos_embed_method
-        self.freqs_cis = precompute_freqs_cis(dim=head_size, seq_len=block_size).to(device)
+        self.freqs_cis = precompute_freqs_cis(dim=head_size, seq_len=block_size)
 
     def forward(self, x, key, value):
         B, T, C = x.shape
@@ -40,7 +26,7 @@ class GQAHead(nn.Module):
             # Reformer相对位置编码
             #           if self.freqs_cis is None:
             #               self.freqs_cis = precompute_freqs_cis(dim=key.shape[-1], seq_len=T).to(key.device)
-            xq, xk = apply_rotary_emb(key, query, self.freqs_cis)
+            xq, xk = apply_rotary_emb(key, query, self.freqs_cis.to(x.device))
             # key*value/(d**-0.5)
             query, key = xq, xk
         wei = key @ query.transpose(-2, -1) * (key.shape[-1] ** -0.5)
@@ -233,74 +219,3 @@ class GQALLama1(nn.Module):
         logits = logits[:, -1, :]
         output = torch.argmax(logits, -1)
         return output
-
-
-if __name__ == '__main__':
-    feed_forward_mode = "relu"
-    norm = "none"
-    pos_embed_method = "sin"
-    # 14分类任务
-    m = GQALLama1(train.vocab_size, out_features=14, n_heads=4,
-                  n_embedding=n_embedding, block_size=block_size, dropout=dropout,
-                  feed_forward_mode=feed_forward_mode, norm=norm,
-                  pos_embed_method=pos_embed_method)
-
-    optimizer = torch.optim.Adam(m.parameters(), lr=1e-3)
-    train.train(model=m, model_name='GQA_qkv011', optimizer=optimizer, max_iter=max_iter, batch_size=batch_size,
-                block_size=block_size,
-                n_embedding=n_embedding,
-                getABatch=train.getABatch, device=device)
-
-# trainLosses = []
-# val_losses = []
-# count = 0
-# logger.info("start training")
-# print("start training")
-# train_start_time = time.time()
-# params_num = sum(p.numel() for p in m.parameters()) / 1e6
-# print(sum(p.numel() for p in m.parameters()) / 1e6, 'M parameters')
-# for step in range(max_iter):
-#     m.to(device)
-#     trainLoss = []
-#     logger.info(f"The step is {step}")
-#     for X, Y in getABatch('train', batch_size, block_size):
-#         X, Y = X.to(device), Y.to(device)
-#         _, loss = m(X, Y)
-#         trainLoss.append(loss.item())
-#         optimizer.zero_grad(set_to_none=True)
-#         loss.backward()
-#         optimizer.step()
-#     if step != -1:
-#         # val_loss = estimate_loss(m)
-#         val_loss=0
-#         t_loss = np.mean(trainLoss)
-#         trainLosses.append(t_loss)
-#         val_losses.append(val_loss)
-#         count += 1
-#         logger.info(f"step{step}: train loss {t_loss}, val loss {val_loss}")
-#     train_time_elapsed = time.time()
-#     m.to("cpu")
-#     allCount = 0
-#     accCount = 0
-#     for x, y in getABatch('val', 512, block_size):
-#         x = x.to('cpu')
-#         y = y.to('cpu')
-#         allCount += 512
-#         output = m.pre(x)
-#         y = y.view(512)
-#         acc = y == output
-#         acc = acc.sum().item()
-#         accCount += acc
-#     print(f"step:{step},总数据{allCount}")
-#     print(f"准确分类数据{accCount}")
-#     print(f"准确率{accCount / allCount}")
-#     logger.info(f"step:{step},toal num:{allCount}")
-#     logger.info(f"acc num:{accCount}")
-#     logger.info(f"acc:{accCount / allCount}")
-#     torch.save(m,
-#                f'./output/GQA-qkv011-mod-_{feed_forward_mode}_{norm}_{pos_embed_method}-{block_size}_{n_embedding}-{step}-{params_num}_{accCount / allCount}.pth')
-#     val_time_elapsed = time.time()
-#     logger.info(
-#         f"train_time_elapsed:{train_time_elapsed - train_start_time},val_time_elapsed:{val_time_elapsed - train_time_elapsed}")
-#     print(
-#         f"train_time_elapsed:{train_time_elapsed - train_start_time},val_time_elapsed:{val_time_elapsed - train_time_elapsed}")

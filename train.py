@@ -7,39 +7,9 @@ import numpy as np
 import torch
 
 import model
-from NewsDataLoader import getABatch, getVocabSize
+
 from utils import get_logger
 
-n_embedding: int = 168  # 嵌入维度
-# 注意力相关参数
-n_heads: int = 4  # 注意力头
-head_dim: int = n_embedding // n_heads  # 每个注意力头的维度
-vocab_size: int = -1  # 词表大小
-multiple_of: int = 4  # make SwiGLU hidden layer size multiple of large power of 2
-batch_size: int = 128  # 一个批量大小
-block_size: int = 512  # 一个批量中包含的字符数
-dropout: int = 0.2
-device: str = 'cuda:4' if torch.cuda.is_available() else 'cpu'
-# device="cpu"
-max_iter: int = 10
-
-
-@torch.no_grad()
-def estimate_loss(model):
-    model.eval()
-    losses = []
-    for x, y in getABatch('val', model.batch_size, model.block_size):
-        x = x.to(model.device)
-        y = y.to(model.device)
-        logits, loss = model(x, y)
-        losses.append(loss.item())
-    out = np.mean(losses)
-    model.train()
-    return out
-
-
-vocab_size = getVocabSize()
-print(vocab_size)
 
 # 暂时将训练和验证合在一起
 def train(model, model_name, optimizer, max_iter, batch_size, block_size, n_embedding, getABatch, device="cuda"):
@@ -117,10 +87,25 @@ def train(model, model_name, optimizer, max_iter, batch_size, block_size, n_embe
         return 1
 
 
-#def train_and_val(model, model_name, optimizer, max_iter, batch_size, block_size, n_embedding, getABatch, device="cuda"):
+# def train_and_val(model, model_name, optimizer, max_iter, batch_size, block_size, n_embedding, getABatch, device="cuda"):
 
 
 if __name__ == '__main__':
+    from NewsDataLoader import getABatch, getVocabSize
+
+    n_embedding: int = 168  # 嵌入维度
+    # 注意力相关参数
+    n_heads: int = 4  # 注意力头
+    head_dim: int = n_embedding // n_heads  # 每个注意力头的维度
+    vocab_size = getVocabSize()
+    print(vocab_size)  # 词表大小
+    multiple_of: int = 4  # make SwiGLU hidden layer size multiple of large power of 2
+    batch_size: int = 128  # 一个批量大小
+    block_size: int = 512  # 一个批量中包含的字符数
+    dropout: int = 0.2
+    device: str = 'cuda:4' if torch.cuda.is_available() else 'cpu'
+    # device="cpu"
+    max_iter: int = 10
     feed_forward_mode = "relu"
     norm = "none"
     pos_embed_method = "sin"
