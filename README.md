@@ -2,7 +2,7 @@
 
 文档暂时没写 
 
-$\color{red}{main分支会经常更新不会及时， 实时开发（能运行）的代码请移步master分支}$
+<font style="color: red;">{main分支会经常更新不会及时， 实时开发（能运行）的代码请移步master分支</font>
 
 - model.py 主要的模型文件
   
