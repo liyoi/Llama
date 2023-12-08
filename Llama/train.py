@@ -81,7 +81,8 @@ for step in range(max_iter):
         loss.backward()
         optimizer.step()
     if step != -1:
-        val_loss = estimate_loss(m)
+        # val_loss = estimate_loss(m)
+        val_loss = 0
         t_loss = np.mean(trainLoss)
         trainLosses.append(t_loss)
         val_losses.append(val_loss)
