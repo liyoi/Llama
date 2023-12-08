@@ -248,8 +248,8 @@ class LLama(nn.Module):
         word_embedding = self.embedding(idx)
         x = word_embedding
         if self.pos_embed_method == "sin":
-            pos_embedding = self.position_emb(torch.arange(0, T))
-            pos_embedding = torch.repeat_interleave(pos_embedding, B)
+            pos_embedding = self.position_emb(torch.arange(0, T).to(idx.device))
+            pos_embedding = torch.repeat_interleave(pos_embedding, B).view(B,T,self.n_embedding)
             x = x + pos_embedding
         x = self.heads(x)
         return x
