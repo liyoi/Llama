@@ -2,7 +2,7 @@ from NewsDataLoader import getABatch, getVocabSize
 import torch
 
 import train
-from GQAModel import GQALLama1
+from GQAModel import GroupQALLama1
 
 n_embedding: int = 360  # 嵌入维度
 # 注意力相关参数
@@ -22,13 +22,13 @@ feed_forward_mode = "relu"
 norm = "none"
 pos_embed_method = "sin"
 # 14分类任务
-m = GQALLama1(train.vocab_size, out_features=14, n_heads=4,
+m = GroupQALLama1(vocab_size, out_features=14, n_group=2, n_query_head=4,
                   n_embedding=n_embedding, block_size=block_size, dropout=dropout,
                   feed_forward_mode=feed_forward_mode, norm=norm,
                   pos_embed_method=pos_embed_method)
 
 optimizer = torch.optim.Adam(m.parameters(), lr=1e-3)
-train.train(model=m, model_name='GQA_qkv011', optimizer=optimizer, max_iter=max_iter, batch_size=batch_size,
-                block_size=block_size,
-                n_embedding=n_embedding,
-                getABatch=train.getABatch, device=device)
+train.train(model=m, model_name='GQA-2', optimizer=optimizer, max_iter=max_iter, batch_size=batch_size,
+            block_size=block_size,
+            n_embedding=n_embedding,
+            getABatch=getABatch, device=device)

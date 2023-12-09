@@ -1,13 +1,9 @@
 # -*- encoding==utf-8 -*-
 import time
-
-# from data import getDataLoader, getVocabSize
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-
 import model
-
 from utils import get_logger
 
 
@@ -102,7 +98,7 @@ if __name__ == '__main__':
     multiple_of: int = 4  # make SwiGLU hidden layer size multiple of large power of 2
     batch_size: int = 128  # 一个批量大小
     block_size: int = 512  # 一个批量中包含的字符数
-    dropout: int = 0.2
+    dropout: float = 0.2
     device: str = 'cuda:4' if torch.cuda.is_available() else 'cpu'
     # device="cpu"
     max_iter: int = 10
